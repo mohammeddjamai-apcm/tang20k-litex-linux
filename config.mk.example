@@ -1,0 +1,58 @@
+# ---------------------------------------------------------------------------
+# Global defaults (used when you have no config.mk). Everything lives inside
+# the repo, and `make setup` downloads what is missing.
+# To customise: create config.mk (gitignored) and override only what you need.
+# Plain "=" in config.mk wins over the "?=" defaults here.
+# ---------------------------------------------------------------------------
+
+# --- tool locations -------------------------------------------------------
+VENV          ?= $(CURDIR)/deps/venv
+LITEX_DIR     ?= $(CURDIR)/deps/litex
+BUILDROOT_DIR ?= $(CURDIR)/deps/buildroot
+OPENSBI_DIR   ?= $(CURDIR)/deps/opensbi
+# linux-on-litex-vexriscv provides the default Buildroot external tree + defconfig
+LOL_DIR       ?= $(CURDIR)/deps/linux-on-litex-vexriscv
+
+# --- pinned versions (used by `make setup`) -------------------------------
+BUILDROOT_REF ?= 2025.02.3
+OPENSBI_REF   ?= v1.3
+
+# --- output locations -----------------------------------------------------
+SOC_OUT       ?= $(CURDIR)/out/soc
+BR_OUT        ?= $(CURDIR)/out/buildroot
+SBI_OUT       ?= $(CURDIR)/out/opensbi
+IMG_DIR       ?= $(CURDIR)/out/images
+
+# --- Buildroot ------------------------------------------------------------
+# Default: LiteX's own Buildroot config (litex_vexriscv_defconfig from the external tree).
+BR2_EXTERNAL  ?= $(LOL_DIR)/buildroot
+BR_DEFCONFIG_NAME ?= litex_vexriscv_defconfig
+# Optional: a full path to your own defconfig file (overrides the name above).
+BR_DEFCONFIG  ?=
+JOBS          ?= $(shell nproc)
+
+# --- SoC generation -------------------------------------------------------
+BOARD_NAME    ?= sipeed_tang_primer_20k
+SOC_CMD       ?= python3 -m litex_boards.targets.$(BOARD_NAME)
+SOC_ARGS      ?= --cpu-type=vexriscv_smp --cpu-variant=linux --cpu-count=1 \
+                 --sys-clk-freq=48e6 --with-sdcard
+# Bitstream produced by Gowin. Override if Gowin ran elsewhere (e.g. Windows).
+BIT           ?= $(SOC_OUT)/gateware/impl/pnr/$(BOARD_NAME).fs
+
+# --- device tree ----------------------------------------------------------
+# Leave DTS_SRC empty to generate with litex_json2dts_linux (+ DTS_ARGS).
+# Set it to a ready-made .dts to use that instead.
+DTS_SRC       ?=
+DTS_ARGS      ?=
+
+# --- OpenSBI --------------------------------------------------------------
+CROSS         ?= riscv64-unknown-elf-
+OPENSBI_ARGS  ?= PLATFORM_RISCV_ISA=rv32ima_zicsr_zifencei PLATFORM_RISCV_ABI=ilp32
+
+# --- programming / boot ---------------------------------------------------
+FPGA_BOARD    ?= tangprimer20k
+UART          ?= /dev/ttyUSB1
+ADDR_KERNEL   ?= 0x40000000
+ADDR_DTB      ?= 0x40ef0000
+ADDR_ROOTFS   ?= 0x41000000
+ADDR_OPENSBI  ?= 0x40f00000
